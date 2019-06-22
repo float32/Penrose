@@ -33,6 +33,7 @@
 
 #define COL_PORT		PORTD
 #define COL_DDR			DDRD
+#define COL_INPUT		PIND
 
 #define SWITCH_ROW1_PIN		PB2
 #define SWITCH_ROW2_PIN		PB4
@@ -65,14 +66,11 @@ void io_init();
 void io_processLed();
 
 void io_processLedPipelined();
-//scan all buttons
-void io_processButtons();
 void io_processButtonsPipelined();
 
 uint16_t io_getActiveSteps();
 void io_setActiveSteps(uint16_t val);
 void io_setCurrentQuantizedValue(uint8_t value);
-uint8_t io_isButtonPushed(uint8_t buttonNr);
 
 
 #endif /* IOMATRIX_H_ */

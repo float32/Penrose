@@ -67,15 +67,14 @@ void io_init()
   LED_DDR_13 &= ~(  (1<<LED_1_PIN) | (1<<LED_2_PIN) | (1<<LED_3_PIN)  );
   LED_DDR_46 &= ~(  (1<<LED_4_PIN) | (1<<LED_5_PIN) | (1<<LED_6_PIN)  );
   
-  //all buttons rows as inputs (attention SS pin used!)
-  SWITCH_DDR_12 &= ~(  (1<<SWITCH_ROW1_PIN) | (1<<SWITCH_ROW2_PIN) );
-  SWITCH_DDR_3 &= ~(1<<SWITCH_ROW3_PIN);
-  //pullup on
+  //all button rows as outputs, state high
+  SWITCH_DDR_12 |= (1<<SWITCH_ROW1_PIN) | (1<<SWITCH_ROW2_PIN);
+  SWITCH_DDR_3 |= (1<<SWITCH_ROW3_PIN);
   SWITCH_PORT_12 |= (1<<SWITCH_ROW1_PIN) | (1<<SWITCH_ROW2_PIN);
   SWITCH_PORT_3 |= (1<<SWITCH_ROW3_PIN);
   
-  //all buttown columns as outs, state high
-  COL_DDR |= (1<<COL1_PIN) | (1<<COL2_PIN) | (1<<COL3_PIN) | (1<<COL4_PIN);
+  //all button columns as inputs with pullup
+  COL_DDR &= ~((1<<COL1_PIN) | (1<<COL2_PIN) | (1<<COL3_PIN) | (1<<COL4_PIN));
   COL_PORT |= ((1<<COL1_PIN) | (1<<COL2_PIN) | (1<<COL3_PIN) | (1<<COL4_PIN));
 };
 //-----------------------------------------------------------
@@ -203,63 +202,6 @@ void io_processLedPipelined()
   if(ledState>=12) ledState=0;
 };
 //-----------------------------------------------------------
-//read button matrix 
-void io_processButtons()
-{
-	uint8_t col;
-	uint8_t row;
-	uint8_t i=0;
-	uint16_t val;
-	
-	for(row=0;row<3;row++)
-	{
-	  for(col=0;col<4;col++)
-	  {
-		//all columns on
-		COL_PORT |= ( (1<<COL1_PIN) | (1<<COL2_PIN) | (1<<COL3_PIN) | (1<<COL4_PIN) );
-		//pin low for active column
-		COL_PORT &= ~(1<<col);
-		
-		//read active row input
-		switch(row)
-		{
-		  case 0:
-		      val = (SWITCH_INPUT_12 & (1<<SWITCH_ROW1_PIN) ) == 0;
-		      break;
-		  
-		  case 1:
-		      val = (SWITCH_INPUT_12 & (1<<SWITCH_ROW2_PIN) ) == 0;
-		      break;
-		    
-		  case 2:
-		      val = (SWITCH_INPUT_3 & (1<<SWITCH_ROW3_PIN) ) == 0;
-		      break;
-		}
-	    
-		//check if the button changed its state since the last call
-		if(   (io_lastButtonState&(1<<i))   != (val<<i)   )
-		{
-			//update state memory
-			io_lastButtonState &= ~(1<<i);
-			io_lastButtonState |=val<<i;
-			//toggle LED
-			if(val)
-			{
-			  timer_touchAutosave();
-			  if(!(io_ledState&(1<<i)))
-			  {
-			    io_ledState |= 1<<i;
-			  } else 
-			  {
-			    io_ledState &= ~(1<<i);
-			  }
-			}
-		}
-		i++;
-	  }
-	}
-};
-//-----------------------------------------------------------
 static uint8_t buttonRowIndex = 0;
 static uint8_t buttonColIndex = 0;
 static uint8_t ledNr = 0;
@@ -269,27 +211,30 @@ void io_processButtonsPipelined()
 	uint8_t i= ledNr;
 	uint16_t val;
 	  
-	//all columns on
-	COL_PORT |= ( (1<<COL1_PIN) | (1<<COL2_PIN) | (1<<COL3_PIN) | (1<<COL4_PIN) );
-	//pin low for active column
-	COL_PORT &= ~(1<<buttonColIndex);
-	
-	//read active row input
+	//all rows on
+	SWITCH_PORT_12 |= (1<<SWITCH_ROW1_PIN) | (1<<SWITCH_ROW2_PIN);
+	SWITCH_PORT_3 |= (1<<SWITCH_ROW3_PIN);
+	//pin low for active row
 	switch(buttonRowIndex)
 	{
 	  default:
 	  case 0:
-	      val = (SWITCH_INPUT_12 & (1<<SWITCH_ROW1_PIN) ) == 0;
+	      SWITCH_PORT_12 &= ~(1<<SWITCH_ROW1_PIN);
 	      break;
-	  
+
 	  case 1:
-	      val = (SWITCH_INPUT_12 & (1<<SWITCH_ROW2_PIN) ) == 0;
+	      SWITCH_PORT_12 &= ~(1<<SWITCH_ROW2_PIN);
 	      break;
-	    
+
 	  case 2:
-	      val = (SWITCH_INPUT_3 & (1<<SWITCH_ROW3_PIN) ) == 0;
+	      SWITCH_PORT_3 &= ~(1<<SWITCH_ROW3_PIN);
 	      break;
 	}
+
+	// Wait for the pin to settle
+	_delay_us(1);
+	//read active column input
+	val = (COL_INPUT & (1<<buttonColIndex)) == 0;
     
 	//check if the button changed its state since the last call
 	if(   (io_lastButtonState&(1<<i))   != (val<<i)   )
@@ -324,36 +269,6 @@ void io_processButtonsPipelined()
 	    ledNr = 0;
 	  }
 	}
-}
-//-----------------------------------------------------------
-uint8_t io_isButtonPushed(uint8_t buttonNr)
-{
-  uint8_t row = buttonNr/4; // [0:2]
-  uint8_t col = buttonNr%4; // [0:3]
-
-  //all columns on
-  COL_PORT |= ( (1<<COL1_PIN) | (1<<COL2_PIN) | (1<<COL3_PIN) | (1<<COL4_PIN) );
-  //pin low for active column
-  COL_PORT &= ~(1<<col);
-  
-  //read active row input
-  uint8_t val = 0;
-  switch(row)
-  {
-  case 0:
-      val = (SWITCH_INPUT_12 & (1<<SWITCH_ROW1_PIN) ) == 0;
-      break;
-
-  case 1:
-      val = (SWITCH_INPUT_12 & (1<<SWITCH_ROW2_PIN) ) == 0;
-      break;
-    
-  case 2:
-      val = (SWITCH_INPUT_3 & (1<<SWITCH_ROW3_PIN) ) == 0;
-      break;
-  }
-  
-  return val;
 }
 //-----------------------------------------------------------
 
