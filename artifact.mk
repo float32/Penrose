@@ -21,6 +21,10 @@ BL_HEX  := $(TARGET_DIR)/$(BL_ELF:.elf=.hex)
 
 DISTRIBUTABLES := $(APP_HEX) $(APP_WAV) $(BL_HEX) $(T_HEX)
 
+PROGRAMMER ?= usbasp
+PROGRAMMER_PORT ?= usb
+AVRDUDE_OPTS += -c $(PROGRAMMER) -P $(PROGRAMMER_PORT)
+
 .PHONY: wav
 wav: $(APP_WAV)
 
@@ -32,9 +36,9 @@ $(T_HEX): $(APP_HEX) $(BL_HEX)
 
 .PHONY: load
 load: $(T_HEX)
-	avrdude -B100 -c usbasp -p atmega168 -U lfuse:w:0xff:m -U hfuse:w:0xd4:m -U efuse:w:0x02:m
-	avrdude -B1 -c usbasp -p atmega168 -U flash:w:$^:i
-	avrdude -B1 -c usbasp -p atmega168 -U lock:w:0x0F:m
+	avrdude -B100 $(AVRDUDE_OPTS) -p atmega168 -U lfuse:w:0xff:m -U hfuse:w:0xd4:m -U efuse:w:0x02:m
+	avrdude -B1 $(AVRDUDE_OPTS) -p atmega168 -U flash:w:$^:i
+	avrdude -B1 $(AVRDUDE_OPTS) -p atmega168 -U lock:w:0x0F:m
 
 .PHONY: dist
 dist: $(T_ZIP)
