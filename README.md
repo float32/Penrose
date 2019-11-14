@@ -37,7 +37,7 @@ refactored.
 
 ## Building from source
 
-Dependencies: `gcc-avr`, `python3`
+Dependencies: `gcc-avr`, `python3`, `python3-intelhex`
 
 After cloning the repository, be sure to grab the submodules as well by running
 `git submodule update --init --recursive`
@@ -49,7 +49,7 @@ build/artifact/penrose.hex.
 Some other `make` targets are:
 
 - `load` : program a chip with the merged hex file (requires `avrdude`)
-- `wav`  : generate a wav file for use with the audio bootloader
+- `wav`  : generate a wav file for use with the audio bootloader (requires `gcc`)
 - `cog`  : regenerate lookup tables (requires Python 3 `cogapp` package)
 - `check`: run unit tests (requires Google Test)
 
