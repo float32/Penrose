@@ -24,7 +24,7 @@ The code has multiple separate parts:
 The bootloader has been left as is but the application has been heavily
 refactored.
 
-- Ported everything to c++.
+- Ported everything to C++.
 - Moved to a sample-rate-based architecture instead of loop-based. The sample
   rate is 8 kHz, and the theoretical maximum is 12 kHz (limited by the ADC).
 - Changed the quantizer behavior to find the nearest enabled note, instead of
@@ -34,6 +34,31 @@ refactored.
   misbehavior.
 - Replaced the build system with `boilermake`. All build artifacts now go into
   the 'build' directory.
+
+## Installation
+
+Download hex and wav files from
+[Releases](https://github.com/float32/Penrose/releases).
+
+### With wav file
+
+See the [Penrose manual](https://www.sonic-potions.com/penroseManual) for
+details on how to install firmware via the audio bootloader.
+
+### With hex file
+
+Use the following `avrdude` commands to flash a chip with the firmware.
+
+    avrdude -B100 -c PROGRAMMER -P PROGRAMMER_PORT -p atmega168 \
+        -U lfuse:w:0xff:m -U hfuse:w:0xd4:m -U efuse:w:0x02:m
+    avrdude -B1 -c PROGRAMMER -P PROGRAMMER_PORT -p atmega168 \
+        -U flash:w:PATH_TO_HEX:i
+    avrdude -B1 -c PROGRAMMER -P PROGRAMMER_PORT -p atmega168 \
+        -U lock:w:0x0F:m
+
+You will need to replace `PROGRAMMER` and `PROGRAMMER_PORT` with the appropriate
+values for your AVR programmer, and `PATH_TO_HEX` with the path to the
+downloaded hex file.
 
 ## Building from source
 
