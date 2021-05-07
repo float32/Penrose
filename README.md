@@ -37,7 +37,7 @@ refactored.
 
 ## Building from source
 
-Dependencies: `gcc-avr`, `python3`, `python3-intelhex`
+Dependencies: `gcc-avr`, `avr-libc`, `python3`, `python3-intelhex`
 
 After cloning the repository, be sure to grab the submodules as well by running
 `git submodule update --init --recursive`
