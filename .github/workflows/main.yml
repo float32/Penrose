@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+
+      - name: Install toolchain
+        run: |
+          sudo apt update
+          sudo apt install -y gcc-avr avr-libc python3-intelhex
+
+      - name: Build bootloader
+        run: make -j$(nproc) bl
+
+      - name: Build application
+        run: make -j$(nproc) app
+
+      - name: Build hex2wav
+        run: make -j$(nproc) hex2wav
+
+      - name: Generate artifacts
+        run: make merge wav
+
+      - name: Upload hex file
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/artifact/penrose.hex
+          asset_name: penrose-$tag.hex
+          tag: ${{ github.ref }}
+
+      - name: Upload wav file
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: build/artifact/app.wav
+          asset_name: penrose-$tag.wav
+          tag: ${{ github.ref }}
